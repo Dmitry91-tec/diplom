@@ -1,91 +1,131 @@
-import json, multiprocessing, threading
-import time, gc # модуль Garbage Collector - осуществляет сборку мусора
+import json
+import multiprocessing
+import threading
+import time
+# модуль Garbage Collector - осуществляет сборку мусора.
+import gc
 import matplotlib.pyplot as plt
 
 
+# Работа с JSON или CPU-bound task. Скорость выполнения зависит от мощности процессора.
+# Функция job, принимающая количество элементов.
+def job(parametr):
+    # генерирует список и превращает его в JSON
+    json.dumps(list(range(parametr)))
 
 
-#  Работа с JSON или CPU-bound task. Скорость выполнения зависит от мощности процессора.
-def job(parametr):                            # функция, принимающая кол-во элементов
-    json.dumps(list(range(parametr)))         # генерирует список и превращает его в JSON
+# Последовательный алгоритм sync будет выполнять преобразование списка в строку формата JSON N раз.
+# Функция serial, принимающая количество элементов и количество повторений.
+def serial(parametr, count):
+    # Количество повторений.
+    for _ in range(count):
+        # Последовательная функция, принимающая количество элементов.
+        job(parametr)
 
-
-# Последовательный алгоритм sync будет выполнять тяжеловесную задачу N раз.
-def serial(parametr, count):                # функция, принимающая кол-во элементов и количество повторений
-    for _ in range(count):                  # Количество повторений
-        job(parametr)                       # Последовательная функция, принимающая кол-во элементов
-
-# Создадим по одному потоку на каждый вызов функции и попробуем добиться параллелизма
-def threads_start(parametr, execution_Count):    # функция, принимающая кол-во элементов и количество повторений
-    # создаем список потоков с функцией job и аргументом parametr с кол-м потоков равных "executionUnitsCount"
+# Создадим по одному потоку на каждый вызов функции и попробуем добиться параллелизма.
+# Функция, принимающая количество элементов и количество повторений.
+def threads_start(parametr, execution_Count):
+    # Создаем список потоков с функцией job и аргументом parametr с количеством потоков равных "executionUnitsCount".
     threads = [threading.Thread(target=job, args=(parametr,)) for _ in range(execution_Count)]
 
-    for thread in threads:     #запуск каждого потока из общего списка созданных потоков
+    # Запуск каждого потока из общего списка созданных потоков.
+    for thread in threads:
         thread.start()
 
-    for thread in threads:     #ожидаем завершения каждого запущенного потока
+    # Ожидаем завершения каждого запущенного потока.
+    for thread in threads:
         thread.join()
 
-# Создаем вместо потоков процессы
-def processes_start(parametr, execution_Count): # функция, принимающая кол-во элементов и количество повторений
-    # создаем список процессов с функцией job и аргументом parametr с кол-м процессов равных "executionUnitsCount"
+# Создаем вместо потоков процессы.
+# Функция, принимающая кол-во элементов и количество повторений.
+def processes_start(parametr, execution_Count):
+    # Создаем список процессов с функцией job и аргументом parametr с количеством процессов равных "execution_Count".
     processes = [multiprocessing.Process(target=job, args=(parametr,)) for _ in range(execution_Count)]
 
-    for process in processes:  #запуск каждого процесса из общего списка созданных процессов
+    # Запуск каждого процесса из общего списка созданных процессов.
+    for process in processes:
         process.start()
 
-    for process in processes:  #ожидаем завершения каждого запущенного процесса
+    # Ожидаем завершения каждого запущенного процесса.
+    for process in processes:
         process.join()
 
-x = []                                                    #список под задачи
-y = []                                                    #общий список с результатами расчетов всеми способами
-serial_result = []                                        #список с временами решения задач sync способом
-threads_start_result = []                                 #список с временами решения задач способом multithreading
-processes_start_result = []                               #список с временами решения задач способом multiprocessing
+# Список под задачи.
+x = []
+# Общий список с результатами расчетов всеми способами.
+y = []
+# Список с временами решения задач sync способом.
+serial_result = []
+# Список с временами решения задач способом multithreading.
+threads_start_result = []
+# Список с временами решения задач способом multiprocessing.
+processes_start_result = []
 
 
 #Код тестирующий производительность всех реализаций:
 if __name__ == '__main__':
 
-    gc.disable()                                         #отключение автоматической сборки мусора
-    jsonSize = 1000000                                   #кол-во аргументов
+    # Отключение автоматической сборки мусора.
+    gc.disable()
+    # Количество аргументов.
+    jsonSize = 1000000
 
-    # подставляем значения в кортеж при 10 итерациях  и получаем список из 10 кортежей
+    # Подставляем значения в кортеж при 10 итерациях  и получаем список из 10 кортежей.
     box = [(jsonSize, i) for i in range(1, 11)]
-    options = [serial, threads_start, processes_start]  #список функций:sync, multithreading, multiprocessing
+    # Список функций: sync, multithreading, multiprocessing.
+    options = [serial, threads_start, processes_start]
 
-    for i, q in enumerate(box):         #запуск 10 итераций кортежа для создания потоков от 1 до 10 и 1000000 аргументов
-        parametr, execution_Count = q                                    #присвоение значений из кортежа объекта enumerate
-        print(f"Кол-во задач: {execution_Count}, JSON размер: {parametr}")  #вывод кол-ва текущих задач и аргументов
-        x.append(execution_Count)                                        #список с количеством задач - ось Х
+    # Запуск 10 итераций кортежа для создания потоков от 1 до 10 и 1000000 аргументов.
+    for i, q in enumerate(box):
+        # Присвоение значений из кортежа объекта enumerate.
+        parametr, execution_Count = q
+        # Вывод количества текущих задач и аргументов.
+        print(f"Кол-во задач: {execution_Count}, JSON размер: {parametr}")
+        # Список с количеством задач - ось Х.
+        x.append(execution_Count)
 
-        # функция, принимающая итерируемый объект и начальный индекс (0)
+        # Функция, принимающая итерируемый объект и начальный индекс (0).
         for j, option in enumerate(options):
-            start = time.perf_counter()                        #время начала работы программ
-            option(parametr, execution_Count)                  #передача значений в наши программы
-            end = time.perf_counter()                          #время окончания работы программ
-            time_out = round(end - start, 2)                   #время работы программ
-            print(f"Способ работы: {option.__name__}, время выполнения: {time_out} сек.")   #вывод значений в процессе решения
+            # Время начала работы программы.
+            start = time.perf_counter()
+            # Передача значений в наши методы программирования.
+            option(parametr, execution_Count)
+            # Время окончания работы программы.
+            end = time.perf_counter()
+            # Время работы метода программирования.
+            time_out = round(end - start, 2)
+            # Вывод значений в процессе решения
+            print(f"Способ работы: {option.__name__}, время выполнения: {time_out} сек.")
             if option.__name__ == 'serial':
-                serial_result.append(time_out)            #отбор значений с временами решения задач sync способом
+                # Отбор значений с временами решения задач sync способом.
+                serial_result.append(time_out)
             if option.__name__ == 'threads_start':
-                threads_start_result.append(time_out)     #отбор значений с временами решения задач способом multithreading
+                # Отбор значений с временами решения задач способом multithreading.
+                threads_start_result.append(time_out)
             if option.__name__ == 'processes_start':
-                processes_start_result.append(time_out)   #отбор значений с временами решения задач способом multiprocessing
+                # Отбор значений с временами решения задач способом multiprocessing.
+                processes_start_result.append(time_out)
 
-    print(serial_result)                                  #вывод списка с временами решения задач sync способом
-    print(threads_start_result)                           #вывод списка с временами решения задач способом multithreading
-    print(processes_start_result)                         #вывод списка с временами решения задач способом multiprocessing
-    # График sync
+    # Вывод списка с временами решения задач sync способом.
+    print(serial_result)
+    # Вывод списка с временами решения задач способом multithreading.
+    print(threads_start_result)
+    # Вывод списка с временами решения задач способом multiprocessing.
+    print(processes_start_result)
+    # График sync.
     plt.plot(x, serial_result, label='sync', color='green', marker='o', markersize=7)
-    # График multithreading
+    # График multithreading.
     plt.plot(x, threads_start_result, label='multithreading', color='blue', marker='o', markersize=7)
-    # График multiproctssing
+    # График multiproctssing.
     plt.plot(x, processes_start_result, label='multiprocessing', color='red', marker='o', markersize=7)
-    plt.legend(loc=0)                                               # Отображение названий графиков
-    plt.xlabel('Количество задач')                                  # Подпись для оси х
-    plt.ylabel('Время выполнения, сек.')                            # Подпись для оси y
-    plt.title('График зависимостей CPU bound от способов решения')  # Название графика
+    # Отображение названий графиков.
+    plt.legend(loc=0)
+    # Название оси х.
+    plt.xlabel('Количество задач')
+    # Название оси y.
+    plt.ylabel('Время выполнения, сек.')
+    # Название графика.
+    plt.title('График зависимостей CPU bound от способов решения')
     plt.grid(True)
     plt.show()
 
