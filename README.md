@@ -23,8 +23,6 @@
 pip install asyncio
 ```
 
-Далее установка пакетов проходит аналогмчным способом, продемонстированном выше.
-
 Установите multiprocessing-пакет с помощью команды:
 ```sh
 pip install multiprocessing
